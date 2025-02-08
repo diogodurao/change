@@ -37,4 +37,4 @@ python app.py
 - PDF file upload and processing
 - Extraction of "Change %" column data
 - Calculation of average positive and negative percentages
-- Simple table display of results 
+- Simple table display of results# change

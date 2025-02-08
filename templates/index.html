@@ -29,9 +29,21 @@
             padding: 20px;
             border: 2px dashed #ccc;
             border-radius: 5px;
+            transition: all 0.3s ease;
+            position: relative;
         }
-        .upload-section:hover {
-            border-color: #666;
+        .upload-section.dragover {
+            background-color: #e9ecef;
+            border-color: #007bff;
+        }
+        .upload-section .drag-text {
+            margin: 15px 0;
+            color: #666;
+        }
+        .upload-instructions {
+            margin: 10px 0;
+            color: #666;
+            font-size: 0.9em;
         }
         #results {
             display: none;
@@ -166,17 +178,20 @@
     <div class="container">
         <h1>PDF Data Analyzer</h1>
         
-        <div class="upload-section">
+        <div class="upload-section" id="dropZone">
             <form id="uploadForm">
-                <input type="file" id="pdfFile" accept=".pdf" style="display: none;">
-                <button type="button" onclick="document.getElementById('pdfFile').click()">Choose PDF File</button>
+                <input type="file" id="pdfFile" accept=".pdf,.csv,.xlsx,.xls" style="display: none;">
+                <button type="button" onclick="document.getElementById('pdfFile').click()">Choose File</button>
+                <p class="drag-text">or drag and drop your file here</p>
+                <p class="upload-instructions">Supported formats: PDF, CSV, Excel</p>
                 <p id="fileName"></p>
-                <button type="submit" id="uploadButton" style="display: none;">Analyze PDF</button>
+                <button type="submit" id="uploadButton" style="display: none;">Analyze File</button>
             </form>
         </div>
 
         <div id="loading" class="loading">
-            Analyzing PDF... Please wait...
+            <p>Analyzing file... Please wait...</p>
+            <p class="loading-details">This may take a few moments for large files</p>
         </div>
 
         <div id="error" class="error"></div>
@@ -216,28 +231,85 @@
     </div>
 
     <script>
-        document.getElementById('pdfFile').addEventListener('change', function(e) {
-            const fileName = e.target.files[0]?.name;
-            document.getElementById('fileName').textContent = fileName || '';
-            document.getElementById('uploadButton').style.display = fileName ? 'inline-block' : 'none';
+        const dropZone = document.getElementById('dropZone');
+        const uploadForm = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('pdfFile');
+        const fileName = document.getElementById('fileName');
+        const uploadButton = document.getElementById('uploadButton');
+        const loadingDiv = document.getElementById('loading');
+        const errorDiv = document.getElementById('error');
+        const resultsDiv = document.getElementById('results');
+
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
         });
 
-        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+        // Highlight drop zone when item is dragged over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        // Handle dropped files
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function preventDefaults (e) {
             e.preventDefault();
-            const fileInput = document.getElementById('pdfFile');
+            e.stopPropagation();
+        }
+
+        function highlight(e) {
+            dropZone.classList.add('dragover');
+        }
+
+        function unhighlight(e) {
+            dropZone.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+
+            if (files.length > 0) {
+                fileInput.files = files;
+                updateFileName(files[0]);
+            }
+        }
+
+        function updateFileName(file) {
+            fileName.textContent = file.name;
+            uploadButton.style.display = 'inline-block';
+        }
+
+        // File input change handler
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                updateFileName(file);
+            }
+        });
+
+        // Form submission handler
+        uploadForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
             const file = fileInput.files[0];
             
             if (!file) {
-                document.getElementById('error').textContent = 'Please select a PDF file';
+                errorDiv.textContent = 'Please select a file';
                 return;
             }
 
             const formData = new FormData();
             formData.append('file', file);
 
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('error').textContent = '';
-            document.getElementById('results').style.display = 'none';
+            loadingDiv.style.display = 'block';
+            errorDiv.textContent = '';
+            resultsDiv.style.display = 'none';
 
             try {
                 const response = await fetch('/upload', {
@@ -338,14 +410,14 @@
                         weeklyResultsDiv.innerHTML = '<p>No complete weeks found in the data.</p>';
                     }
                     
-                    document.getElementById('results').style.display = 'block';
+                    resultsDiv.style.display = 'block';
                 } else {
-                    document.getElementById('error').textContent = data.error || 'An error occurred';
+                    errorDiv.textContent = data.error || 'An error occurred';
                 }
             } catch (error) {
-                document.getElementById('error').textContent = 'An error occurred while processing the file';
+                errorDiv.textContent = 'An error occurred while processing the file';
             } finally {
-                document.getElementById('loading').style.display = 'none';
+                loadingDiv.style.display = 'none';
             }
         });
     </script>
