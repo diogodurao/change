@@ -23,18 +23,17 @@ class WeeklyAnalyzer:
                 logger.error("Table data is empty or has insufficient rows")
                 raise ValueError("Invalid table data: insufficient rows")
 
-            # Log the raw table data for debugging
-            logger.debug(f"Raw table data first row: {table_data[0]}")
-            logger.debug(f"Raw table data second row: {table_data[1]}")
-            
+            # Check if we have enough columns
+            required_columns = 7  # Date, Price, Open, High, Low, Volume, Change%
+            if not all(len(row) >= required_columns for row in table_data):
+                logger.error(f"Some rows have insufficient columns. Expected {required_columns} columns.")
+                raise ValueError("Invalid table data: insufficient columns")
+
             # Convert table data to DataFrame, skipping the header row
             df = pd.DataFrame(table_data[1:])  # Skip header row
             
             # Get column names from the first row
             headers = table_data[0]
-            
-            # Clean up header names (remove any whitespace and special characters)
-            headers = [str(h).strip() for h in headers]
             
             # Ensure all columns are present
             df.columns = headers
@@ -42,48 +41,25 @@ class WeeklyAnalyzer:
             # Log the column names for debugging
             logger.debug(f"Column names in data: {list(df.columns)}")
             
-            # More flexible column mapping with variations
+            # Map column names to standardized names
             column_mapping = {
                 'Date': 'Date',
-                'Price': 'Close',
-                'Último': 'Close',  # Spanish variation
-                'Last': 'Close',    # Another variation
+                'Price': 'Close',  # Map 'Price' to 'Close'
                 'Open': 'Open',
-                'Abertura': 'Open', # Spanish variation
                 'High': 'High',
-                'Máxima': 'High',   # Spanish variation
                 'Low': 'Low',
-                'Mínima': 'Low',    # Spanish variation
                 'Vol.': 'Volume',
-                'Volume': 'Volume',
-                'Volumen': 'Volume', # Spanish variation
-                'Change %': 'Change %',
-                'Var %': 'Change %', # Variation
-                'Change': 'Change %',
-                '% Change': 'Change %'
+                'Change %': 'Change %'
             }
             
-            # Create a mapping using only the columns that exist in the DataFrame
-            actual_mapping = {col: column_mapping[col] for col in df.columns if col in column_mapping}
-            
-            # Log the actual mapping being used
-            logger.debug(f"Using column mapping: {actual_mapping}")
-            
-            # Verify we have all required base columns (excluding Volume as it's optional)
-            required_base_columns = {'Date', 'Close', 'Open', 'High', 'Low', 'Change %'}
-            mapped_columns = set(actual_mapping.values())
-            
-            missing_columns = required_base_columns - mapped_columns
+            # Verify all required columns are present
+            missing_columns = [col for col in column_mapping.keys() if col not in df.columns]
             if missing_columns:
-                logger.error(f"Missing required columns after mapping: {missing_columns}")
-                logger.error(f"Available columns: {list(df.columns)}")
+                logger.error(f"Missing required columns: {missing_columns}")
                 raise ValueError(f"Missing required columns: {missing_columns}")
             
             # Rename columns to match our expected names
-            df = df.rename(columns=actual_mapping)
-            
-            # Log the DataFrame columns after renaming
-            logger.debug(f"DataFrame columns after renaming: {list(df.columns)}")
+            df = df.rename(columns=column_mapping)
             
             # Convert date strings to datetime objects
             try:
@@ -106,27 +82,11 @@ class WeeklyAnalyzer:
             numeric_columns = ['Open', 'High', 'Low', 'Close', 'Change %']
             for col in numeric_columns:
                 try:
-                    # First, clean the values
-                    df[col] = df[col].astype(str).apply(lambda x: x.strip().replace(',', '').replace('%', '').replace('K', ''))
-                    # Convert to float
-                    df[col] = pd.to_numeric(df[col], errors='coerce')
-                    # Handle any NaN values
-                    if df[col].isna().any():
-                        logger.warning(f"Found NaN values in {col} after conversion")
-                        df[col] = df[col].fillna(0)
+                    df[col] = df[col].apply(lambda x: float(str(x).strip().replace(',', '').replace('%', '')))
                 except Exception as e:
                     logger.error(f"Error converting column {col} to numeric: {e}")
                     logger.debug(f"Values in {col}: {df[col].values}")
                     raise ValueError(f"Could not convert {col} values to numeric format")
-            
-            # Handle Volume column separately as it's optional
-            if 'Volume' in df.columns:
-                try:
-                    df['Volume'] = df['Volume'].astype(str).apply(lambda x: x.strip().replace(',', '').replace('K', '000') if x else '0')
-                    df['Volume'] = pd.to_numeric(df['Volume'], errors='coerce').fillna(0)
-                except Exception as e:
-                    logger.warning(f"Error converting Volume column: {e}. Setting to 0")
-                    df['Volume'] = 0
             
             # Sort by date in descending order (newest to oldest)
             df = df.sort_values('Date', ascending=False)
@@ -333,4 +293,21 @@ class WeeklyAnalyzer:
             }
         }
         
-        return result 
+        return result
+
+def calculate_daily_range(intraday_high, intraday_low):
+    if intraday_low == 0:  # Avoid division by zero
+        return 0
+    return ((intraday_high - intraday_low) / intraday_low) * 100
+
+# Assuming you have a data structure for daily progress
+daily_progress = {
+    "Monday": {"intraday_high": 24.28, "intraday_low": 7.49},
+    "Tuesday": {"intraday_high": 13.89, "intraday_low": -9.98},
+    "Wednesday": {"intraday_high": 12.56, "intraday_low": -8.37},
+    "Thursday": {"intraday_high": 7.74, "intraday_low": -4.95},
+    "Friday": {"intraday_high": 12.64, "intraday_low": -4.58},
+}
+
+for day, data in daily_progress.items():
+    data['range_percentage'] = calculate_daily_range(data['intraday_high'], data['intraday_low'])

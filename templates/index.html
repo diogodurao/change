@@ -29,21 +29,9 @@
             padding: 20px;
             border: 2px dashed #ccc;
             border-radius: 5px;
-            transition: all 0.3s ease;
-            position: relative;
         }
-        .upload-section.dragover {
-            background-color: #e9ecef;
-            border-color: #007bff;
-        }
-        .upload-section .drag-text {
-            margin: 15px 0;
-            color: #666;
-        }
-        .upload-instructions {
-            margin: 10px 0;
-            color: #666;
-            font-size: 0.9em;
+        .upload-section:hover {
+            border-color: #666;
         }
         #results {
             display: none;
@@ -178,20 +166,17 @@
     <div class="container">
         <h1>PDF Data Analyzer</h1>
         
-        <div class="upload-section" id="dropZone">
+        <div class="upload-section">
             <form id="uploadForm">
-                <input type="file" id="pdfFile" accept=".pdf,.csv,.xlsx,.xls" style="display: none;">
-                <button type="button" onclick="document.getElementById('pdfFile').click()">Choose File</button>
-                <p class="drag-text">or drag and drop your file here</p>
-                <p class="upload-instructions">Supported formats: PDF, CSV, Excel</p>
+                <input type="file" id="pdfFile" accept=".pdf" style="display: none;">
+                <button type="button" onclick="document.getElementById('pdfFile').click()">Choose PDF File</button>
                 <p id="fileName"></p>
-                <button type="submit" id="uploadButton" style="display: none;">Analyze File</button>
+                <button type="submit" id="uploadButton" style="display: none;">Analyze PDF</button>
             </form>
         </div>
 
         <div id="loading" class="loading">
-            <p>Analyzing file... Please wait...</p>
-            <p class="loading-details">This may take a few moments for large files</p>
+            Analyzing PDF... Please wait...
         </div>
 
         <div id="error" class="error"></div>
@@ -231,85 +216,28 @@
     </div>
 
     <script>
-        const dropZone = document.getElementById('dropZone');
-        const uploadForm = document.getElementById('uploadForm');
-        const fileInput = document.getElementById('pdfFile');
-        const fileName = document.getElementById('fileName');
-        const uploadButton = document.getElementById('uploadButton');
-        const loadingDiv = document.getElementById('loading');
-        const errorDiv = document.getElementById('error');
-        const resultsDiv = document.getElementById('results');
-
-        // Prevent default drag behaviors
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
-            document.body.addEventListener(eventName, preventDefaults, false);
+        document.getElementById('pdfFile').addEventListener('change', function(e) {
+            const fileName = e.target.files[0]?.name;
+            document.getElementById('fileName').textContent = fileName || '';
+            document.getElementById('uploadButton').style.display = fileName ? 'inline-block' : 'none';
         });
 
-        // Highlight drop zone when item is dragged over it
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, highlight, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, unhighlight, false);
-        });
-
-        // Handle dropped files
-        dropZone.addEventListener('drop', handleDrop, false);
-
-        function preventDefaults (e) {
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            e.stopPropagation();
-        }
-
-        function highlight(e) {
-            dropZone.classList.add('dragover');
-        }
-
-        function unhighlight(e) {
-            dropZone.classList.remove('dragover');
-        }
-
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-
-            if (files.length > 0) {
-                fileInput.files = files;
-                updateFileName(files[0]);
-            }
-        }
-
-        function updateFileName(file) {
-            fileName.textContent = file.name;
-            uploadButton.style.display = 'inline-block';
-        }
-
-        // File input change handler
-        fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                updateFileName(file);
-            }
-        });
-
-        // Form submission handler
-        uploadForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
+            const fileInput = document.getElementById('pdfFile');
             const file = fileInput.files[0];
             
             if (!file) {
-                errorDiv.textContent = 'Please select a file';
+                document.getElementById('error').textContent = 'Please select a PDF file';
                 return;
             }
 
             const formData = new FormData();
             formData.append('file', file);
 
-            loadingDiv.style.display = 'block';
-            errorDiv.textContent = '';
-            resultsDiv.style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').textContent = '';
+            document.getElementById('results').style.display = 'none';
 
             try {
                 const response = await fetch('/upload', {
@@ -367,12 +295,12 @@
                                                 </td>
                                                 <td>Total:</td>
                                                 <td class="change-${day.cumulative > 0 ? 'positive' : day.cumulative < 0 ? 'negative' : 'neutral'}">
-                                                    ${day.cumulative > 0 ? '+' : ''}${day.cumulative.toFixed(2)}%
+                                                    ${day.cumulative > 0 ? '+' : ''}${day.cumulative.toFixed(2)}
                                                 </td>
                                                 ${day.is_market_closed ? '<td>(Market Closed)</td>' : `
                                                 <td>
                                                     <span class="tooltip">
-                                                        Range: ${day.price_range.toFixed(0)} (${day.range_percent.toFixed(2)}%)
+                                                        Range Traded (${day.range_percent > 0 ? '+' : ''}${day.range_percent.toFixed(2)}%)
                                                         <span class="tooltiptext">
                                                             High: ${day.high.toFixed(2)}<br>
                                                             Low: ${day.low.toFixed(2)}
@@ -381,7 +309,7 @@
                                                 </td>
                                                 <td>
                                                     <span class="tooltip">
-                                                        Intraday: ${day.high_change > 0 ? '+' : ''}${day.high_change.toFixed(2)}% / ${day.low_change > 0 ? '+' : ''}${day.low_change.toFixed(2)}%
+                                                        High: ${day.high_change > 0 ? '+' : ''}${day.high_change.toFixed(2)}% / Low: ${day.low_change > 0 ? '+' : ''}${day.low_change.toFixed(2)}%
                                                         <span class="tooltiptext">
                                                             Highest: ${day.high_change > 0 ? '+' : ''}${day.high_change.toFixed(2)}%<br>
                                                             Lowest: ${day.low_change > 0 ? '+' : ''}${day.low_change.toFixed(2)}%
@@ -410,14 +338,14 @@
                         weeklyResultsDiv.innerHTML = '<p>No complete weeks found in the data.</p>';
                     }
                     
-                    resultsDiv.style.display = 'block';
+                    document.getElementById('results').style.display = 'block';
                 } else {
-                    errorDiv.textContent = data.error || 'An error occurred';
+                    document.getElementById('error').textContent = data.error || 'An error occurred';
                 }
             } catch (error) {
-                errorDiv.textContent = 'An error occurred while processing the file';
+                document.getElementById('error').textContent = 'An error occurred while processing the file';
             } finally {
-                loadingDiv.style.display = 'none';
+                document.getElementById('loading').style.display = 'none';
             }
         });
     </script>
