@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB max file size
-app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['UPLOAD_FOLDER'] = '/tmp'  # Change upload folder to /tmp for Vercel
 
 # Ensure upload folder exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -162,7 +162,3 @@ def upload_file():
             return jsonify({'error': f'Error processing PDF: {str(e)}'}), 500
     
     return jsonify({'error': 'Invalid file type'}), 400
-
-if __name__ == '__main__':
-    # Changed port to 5015 to avoid conflicts
-    app.run(debug=True, port=5030)
