@@ -3,212 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Data Analyzer</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
+    <title>PDF Datapila Analyzer</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        positive: '#28a745',
+                        negative: '#dc3545',
+                        neutral: '#6c757d',
+                    }
+                }
+            }
         }
-        .container {
-            background-color: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #333;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .upload-section {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 20px;
-            border: 2px dashed #ccc;
-            border-radius: 5px;
-        }
-        .upload-section:hover {
-            border-color: #666;
-        }
-        #results {
-            display: none;
-            margin-top: 30px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        th {
-            background-color: #f8f9fa;
-        }
-        .error {
-            color: #dc3545;
-            margin-top: 10px;
-            text-align: center;
-        }
-        .loading {
-            display: none;
-            text-align: center;
-            margin: 20px 0;
-        }
-        button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .week-result {
-            margin: 20px 0;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        
-        .week-result h4 {
-            margin-top: 0;
-            color: #333;
-        }
-        
-        .week-result table {
-            width: 100%;
-            margin-top: 10px;
-        }
-        
-        .week-result td {
-            padding: 8px;
-        }
-        
-        .week-result td:first-child {
-            font-weight: bold;
-            width: 200px;
-        }
-        .change-positive {
-            color: #28a745;
-            font-weight: bold;
-        }
-        .change-negative {
-            color: #dc3545;
-            font-weight: bold;
-        }
-        .change-neutral {
-            color: #6c757d;
-        }
-        .progress-table {
-            margin-top: 15px;
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0 8px;
-        }
-        .progress-table td {
-            padding: 8px;
-            border: none;
-        }
-        .market-closed {
-            font-style: italic;
-            color: #6c757d;
-        }
-        .summary-box {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            margin-top: 15px;
-        }
-        .streak-info {
-            margin-top: 10px;
-            padding: 8px;
-            background-color: #e9ecef;
-            border-radius: 4px;
-        }
-        .tooltip {
-            position: relative;
-            display: inline-block;
-            cursor: help;
-        }
-
-        .tooltip .tooltiptext {
-            visibility: hidden;
-            width: 200px;
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            border-radius: 6px;
-            padding: 5px;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            margin-left: -100px;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .tooltip:hover .tooltiptext {
-            visibility: visible;
-            opacity: 1;
-        }
-    </style>
+    </script>
 </head>
-<body>
-    <div class="container">
-        <h1>PDF Data Analyzer</h1>
+<body class="font-sans bg-gray-100 p-5">
+    <div class="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow-md">
+        <h1 class="text-2xl font-bold text-gray-800 text-center mb-8">PDF Data Analyzer</h1>
         
-        <div class="upload-section">
+        <div class="text-center mb-8 p-5 border-2 border-dashed border-gray-300 rounded hover:border-gray-500">
             <form id="uploadForm">
-                <input type="file" id="pdfFile" accept=".pdf" style="display: none;">
-                <button type="button" onclick="document.getElementById('pdfFile').click()">Choose PDF File</button>
-                <p id="fileName"></p>
-                <button type="submit" id="uploadButton" style="display: none;">Analyze PDF</button>
+                <input type="file" id="pdfFile" accept=".pdf" class="hidden">
+                <button type="button" onclick="document.getElementById('pdfFile').click()" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-5 rounded cursor-pointer">Choose PDF File</button>
+                <p id="fileName" class="mt-2"></p>
+                <button type="submit" id="uploadButton" class="hidden bg-blue-600 hover:bg-blue-700 text-white py-2 px-5 rounded cursor-pointer mt-3">Analyze PDF</button>
             </form>
         </div>
 
-        <div id="loading" class="loading">
+        <div id="loading" class="hidden text-center my-5">
             Analyzing PDF... Please wait...
         </div>
 
-        <div id="error" class="error"></div>
+        <div id="error" class="text-red-600 mt-3 text-center"></div>
 
-        <div id="results">
-            <h2>Analysis Results</h2>
+        <div id="results" class="hidden mt-8">
+            <h2 class="text-xl font-semibold mb-4">Analysis Results</h2>
             
-            <h3>Daily Summary</h3>
-            <table>
+            <h3 class="text-lg font-medium mb-2">Daily Summary</h3>
+            <table class="w-full border-collapse mt-4">
                 <tr>
-                    <th>Metric</th>
-                    <th>Value</th>
+                    <th class="p-3 text-left bg-gray-50 border-b border-gray-200">Metric</th>
+                    <th class="p-3 text-left bg-gray-50 border-b border-gray-200">Value</th>
                 </tr>
                 <tr>
-                    <td>Number of Positive Days</td>
-                    <td id="positiveCount">-</td>
+                    <td class="p-3 border-b border-gray-200">Number of Positive Days</td>
+                    <td id="positiveCount" class="p-3 border-b border-gray-200">-</td>
                 </tr>
                 <tr>
-                    <td>Average Positive Change</td>
-                    <td id="positiveAvg">-</td>
+                    <td class="p-3 border-b border-gray-200">Average Positive Change</td>
+                    <td id="positiveAvg" class="p-3 border-b border-gray-200">-</td>
                 </tr>
                 <tr>
-                    <td>Number of Negative Days</td>
-                    <td id="negativeCount">-</td>
+                    <td class="p-3 border-b border-gray-200">Number of Negative Days</td>
+                    <td id="negativeCount" class="p-3 border-b border-gray-200">-</td>
                 </tr>
                 <tr>
-                    <td>Average Negative Change</td>
-                    <td id="negativeAvg">-</td>
+                    <td class="p-3 border-b border-gray-200">Average Negative Change</td>
+                    <td id="negativeAvg" class="p-3 border-b border-gray-200">-</td>
                 </tr>
             </table>
 
-            <h3>Weekly Analysis</h3>
+            <h3 class="text-lg font-medium mt-6 mb-2">Weekly Analysis</h3>
             <div id="weeklyResults">
                 <!-- Weekly results will be inserted here -->
             </div>
@@ -261,56 +119,56 @@
                     if (data.weekly.total_weeks > 0) {
                         data.weekly.weekly_results.forEach((week, index) => {
                             const weekDiv = document.createElement('div');
-                            weekDiv.className = 'week-result';
+                            weekDiv.className = 'my-5 p-4 border border-gray-200 rounded';
                             weekDiv.innerHTML = `
-                                <h4>Week ${index + 1} (${week.week_start} to ${week.week_end})</h4>
-                                <table>
+                                <h4 class="mt-0 text-gray-800 font-medium">Week ${index + 1} (${week.week_start} to ${week.week_end})</h4>
+                                <table class="w-full mt-3">
                                     <tr>
-                                        <td>Average Positive Change:</td>
-                                        <td class="change-positive">+${week.avg_positive.toFixed(2)}%</td>
+                                        <td class="p-2 font-semibold w-48">Average Positive Change:</td>
+                                        <td class="p-2 text-positive font-bold">+${week.avg_positive.toFixed(2)}%</td>
                                     </tr>
                                     <tr>
-                                        <td>Average Negative Change:</td>
-                                        <td class="change-negative">${week.avg_negative.toFixed(2)}%</td>
+                                        <td class="p-2 font-semibold w-48">Average Negative Change:</td>
+                                        <td class="p-2 text-negative font-bold">${week.avg_negative.toFixed(2)}%</td>
                                     </tr>
                                     <tr>
-                                        <td>Best Day:</td>
-                                        <td class="change-positive">${week.max_positive_day} (+${week.max_positive_value.toFixed(2)}%)</td>
+                                        <td class="p-2 font-semibold w-48">Best Day:</td>
+                                        <td class="p-2 text-positive font-bold">${week.max_positive_day} (+${week.max_positive_value.toFixed(2)}%)</td>
                                     </tr>
                                     <tr>
-                                        <td>Worst Day:</td>
-                                        <td class="change-negative">${week.max_negative_day} (${week.max_negative_value.toFixed(2)}%)</td>
+                                        <td class="p-2 font-semibold w-48">Worst Day:</td>
+                                        <td class="p-2 text-negative font-bold">${week.max_negative_day} (${week.max_negative_value.toFixed(2)}%)</td>
                                     </tr>
                                 </table>
 
-                                <div class="summary-box">
-                                    <h5>Weekly Progress:</h5>
-                                    <table class="progress-table">
+                                <div class="bg-gray-50 p-4 rounded mt-4">
+                                    <h5 class="font-medium">Weekly Progress:</h5>
+                                    <table class="w-full mt-4 border-separate border-spacing-y-2">
                                         ${week.daily_progress.map(day => `
-                                            <tr class="${day.is_market_closed ? 'market-closed' : ''}">
-                                                <td>${day.day}</td>
-                                                <td>${day.arrow}</td>
-                                                <td class="change-${day.change > 0 ? 'positive' : day.change < 0 ? 'negative' : 'neutral'}">
+                                            <tr class="${day.is_market_closed ? 'italic text-gray-500' : ''}">
+                                                <td class="p-2">${day.day}</td>
+                                                <td class="p-2">${day.arrow}</td>
+                                                <td class="p-2 ${day.change > 0 ? 'text-positive font-bold' : day.change < 0 ? 'text-negative font-bold' : 'text-neutral'}">
                                                     ${day.change > 0 ? '+' : ''}${day.change.toFixed(2)}%
                                                 </td>
-                                                <td>Total:</td>
-                                                <td class="change-${day.cumulative > 0 ? 'positive' : day.cumulative < 0 ? 'negative' : 'neutral'}">
+                                                <td class="p-2">Total:</td>
+                                                <td class="p-2 ${day.cumulative > 0 ? 'text-positive font-bold' : day.cumulative < 0 ? 'text-negative font-bold' : 'text-neutral'}">
                                                     ${day.cumulative > 0 ? '+' : ''}${day.cumulative.toFixed(2)}
                                                 </td>
-                                                ${day.is_market_closed ? '<td>(Market Closed)</td>' : `
-                                                <td>
-                                                    <span class="tooltip">
+                                                ${day.is_market_closed ? '<td class="p-2">(Market Closed)</td>' : `
+                                                <td class="p-2">
+                                                    <span class="relative inline-block cursor-help group">
                                                         Range Traded (${day.range_percent > 0 ? '+' : ''}${day.range_percent.toFixed(2)}%)
-                                                        <span class="tooltiptext">
+                                                        <span class="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-300 absolute z-10 bottom-full left-1/2 transform -translate-x-1/2 w-48 bg-gray-800 text-white text-center rounded p-2">
                                                             High: ${day.high.toFixed(2)}<br>
                                                             Low: ${day.low.toFixed(2)}
                                                         </span>
                                                     </span>
                                                 </td>
-                                                <td>
-                                                    <span class="tooltip">
+                                                <td class="p-2">
+                                                    <span class="relative inline-block cursor-help group">
                                                         High: ${day.high_change > 0 ? '+' : ''}${day.high_change.toFixed(2)}% / Low: ${day.low_change > 0 ? '+' : ''}${day.low_change.toFixed(2)}%
-                                                        <span class="tooltiptext">
+                                                        <span class="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-300 absolute z-10 bottom-full left-1/2 transform -translate-x-1/2 w-48 bg-gray-800 text-white text-center rounded p-2">
                                                             Highest: ${day.high_change > 0 ? '+' : ''}${day.high_change.toFixed(2)}%<br>
                                                             Lowest: ${day.low_change > 0 ? '+' : ''}${day.low_change.toFixed(2)}%
                                                         </span>
@@ -320,11 +178,11 @@
                                         `).join('')}
                                     </table>
 
-                                    <div class="streak-info">
+                                    <div class="mt-3 p-2 bg-gray-200 rounded">
                                         <strong>Weekly Summary:</strong><br>
-                                        • Final Change: <span class="change-${week.final_change > 0 ? 'positive' : 'negative'}">
+                                        • Final Change: <span class="${week.final_change > 0 ? 'text-positive font-bold' : 'text-negative font-bold'}">
                                             ${week.final_change > 0 ? '+' : ''}${week.final_change.toFixed(2)}%</span><br>
-                                        • Highest Point in the week: <span class="change-positive">+${week.highest_point.value.toFixed(2)}%</span> (${week.highest_point.day})<br>
+                                        • Highest Point in the week: <span class="text-positive font-bold">+${week.highest_point.value.toFixed(2)}%</span> (${week.highest_point.day})<br>
                                         ${week.turned_positive ? `• Turned Positive: ${week.turned_positive}<br>` : ''}
                                         ${week.turned_negative ? `• Turned Negative: ${week.turned_negative}<br>` : ''}
                                         • Longest Streak: ${week.longest_streak.count} ${week.longest_streak.direction} days (${week.longest_streak.days})<br>
