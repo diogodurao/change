@@ -9,6 +9,7 @@ from weekly_analyzer import WeeklyAnalyzer
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+# Force rebuild - added to clear cache
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB max file size
 app.config['UPLOAD_FOLDER'] = '/tmp'  # Change upload folder to /tmp for Vercel
